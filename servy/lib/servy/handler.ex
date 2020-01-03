@@ -2,8 +2,11 @@ defmodule Servy.Handler do
   def handle(request) do
     request
     |> parse
+    |> rewrite_path
     |> log
     |> route
+    |> track
+    |> emojify
     |> format_response
   end
 
@@ -24,26 +27,53 @@ defmodule Servy.Handler do
     }
   end
 
-  def route(conv) do
-    route(conv, conv.method, conv.path)
+  def rewrite_path(%{path: "/wildlife"} = conv) do
+    %{conv | path: "/wildthings"}
   end
 
-  def route(conv, "GET", "/wildthings") do
+  def rewrite_path(%{path: "/bears?id=" <> id} = conv) do
+    # can use a regex to match more than just bears
+    # capture <thing> and <id> before the regex chars they represent
+    # iex> regex = ~r{\/(?<thing>\w+)\?id=(?<id>\d+)}
+    # Regex.named_captures(regex, path)
+    %{conv | path: "/bears/#{id}"}
+  end
+
+  def rewrite_path(conv), do: conv
+
+  def route(%{method: "GET", path: "/wildthings"} = conv) do
     %{conv | status: 200, resp_body: "Bears, Lions, Tigerzzz"}
   end
 
-  def route(conv, "GET", "/bears") do
+  def route(%{method: "GET", path: "/bears"} = conv) do
     %{conv | status: 200, resp_body: "Teddy, Smokey"}
   end
 
-  def route(conv, "GET", "/bears/" <> id) do
+  def route(%{method: "GET", path: "/bears/" <> id} = conv) do
     %{conv | status: 200, resp_body: "Bear #{id}"}
   end
 
   # default function clause
-  def route(conv, _method, path) do
+  def route(%{path: path} = conv) do
     %{conv | status: 404, resp_body: "No #{path} here!"}
   end
+
+  def route(%{method: "DELETE", path: "/bears/" <> _id} = conv) do
+    %{conv | status: 403, resp_body: "Bears must never be deleted!"}
+  end
+
+  def track(%{status: 404, path: path} = conv) do
+    IO.puts("Warning #{path} is on the loose!")
+    conv
+  end
+
+  def track(conv), do: conv
+
+  def emojify(%{status: 200, resp_body: resp_body} = conv) do
+    %{conv | resp_body: "😐#{resp_body}😐"}
+  end
+
+  def emojify(conv), do: conv
 
   def format_response(conv) do
     """
@@ -102,6 +132,28 @@ IO.puts(response)
 
 request = """
 GET /bears/1 HTTP/1.1
+Host: example.com
+User-Agent: ExampleBrowser/1.0
+Accept: */*
+
+"""
+
+response = Servy.Handler.handle(request)
+IO.puts(response)
+
+request = """
+GET /wildlife HTTP/1.1
+Host: example.com
+User-Agent: ExampleBrowser/1.0
+Accept: */*
+
+"""
+
+response = Servy.Handler.handle(request)
+IO.puts(response)
+
+request = """
+GET /bears?id=1 HTTP/1.1
 Host: example.com
 User-Agent: ExampleBrowser/1.0
 Accept: */*
