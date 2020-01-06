@@ -183,3 +183,17 @@ name=Balooooon&type=BlackNYellow
 response = Servy.Handler.handle(request)
 
 IO.puts(response)
+
+request = """
+POST /bears HTTP/1.1
+Host: example.com
+User-Agent: ExampleBrowser/1.0
+Accept: */*
+Content-Type: another-type-that-we-can't-handle
+Content-Length: 21
+
+"""
+
+response = Servy.Handler.handle(request)
+
+IO.puts(response)
