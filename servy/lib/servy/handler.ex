@@ -1,7 +1,11 @@
 defmodule Servy.Handler do
   @moduledoc "Handles HTTP requests."
 
-  @pages_path Path.expand("../../pages", __DIR__)
+  @pages_path Path.expand("pages", File.cwd!())
+
+  import Servy.Parser, only: [parse: 1]
+  import Servy.Plugins, only: [rewrite_path: 1, log: 1, track: 1]
+  import Servy.FileHandler, only: [handle_file: 2]
 
   @doc "Transforms request into a response."
   def handle(request) do
@@ -14,38 +18,6 @@ defmodule Servy.Handler do
     |> emojify
     |> format_response
   end
-
-  @doc "Logs request properties"
-  def log(conv), do: IO.inspect(conv)
-
-  def parse(request) do
-    [method, path, _] =
-      request
-      |> String.split("\n")
-      |> List.first()
-      |> String.split(" ")
-
-    %{
-      method: method,
-      path: path,
-      resp_body: "",
-      status: nil
-    }
-  end
-
-  def rewrite_path(%{path: "/wildlife"} = conv) do
-    %{conv | path: "/wildthings"}
-  end
-
-  def rewrite_path(%{path: "/bears?id=" <> id} = conv) do
-    # can use a regex to match more than just bears
-    # capture <thing> and <id> before the regex chars they represent
-    # iex> regex = ~r{\/(?<thing>\w+)\?id=(?<id>\d+)}
-    # Regex.named_captures(regex, path)
-    %{conv | path: "/bears/#{id}"}
-  end
-
-  def rewrite_path(conv), do: conv
 
   def route(%{method: "GET", path: "/wildthings"} = conv) do
     %{conv | status: 200, resp_body: "Bears, Lions, Tigerzzz"}
@@ -81,25 +53,6 @@ defmodule Servy.Handler do
   def route(%{path: path} = conv) do
     %{conv | status: 404, resp_body: "No #{path} here!"}
   end
-
-  def handle_file({:ok, content}, conv) do
-    %{conv | status: 200, resp_body: content}
-  end
-
-  def handle_file({:error, :enoent}, conv) do
-    %{conv | status: 404, resp_body: "File not found"}
-  end
-
-  def handle_file({:error, reason}, conv) do
-    %{conv | status: 500, resp_body: "File error: #{reason}"}
-  end
-
-  def track(%{status: 404, path: path} = conv) do
-    IO.puts("Warning #{path} is on the loose!")
-    conv
-  end
-
-  def track(conv), do: conv
 
   def emojify(%{status: 200, resp_body: resp_body} = conv) do
     %{conv | resp_body: "😐\n#{resp_body}\n😐"}
