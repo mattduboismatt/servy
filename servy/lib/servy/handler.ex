@@ -18,6 +18,7 @@ defmodule Servy.Handler do
     |> log
     |> route
     |> track
+    |> put_content_length
     |> format_response
   end
 
@@ -64,13 +65,34 @@ defmodule Servy.Handler do
 
   # def emojify(%Conv{} = conv), do: conv
 
+  def put_content_length(conv) do
+    headers = Map.put(conv.resp_headers, "Content-Length", String.length(conv.resp_body))
+    %{conv | resp_headers: headers}
+  end
+
   def format_response(%Conv{} = conv) do
     """
     HTTP/1.1 #{Conv.full_status(conv)}\r
-    Content-Type: text/html\r
-    Content-Length: #{String.length(conv.resp_body)}\r
+    #{format_response_headers(conv)}
     \r
     #{conv.resp_body}
     """
   end
+
+  defp format_response_headers(conv) do
+    # Content-Type: #{conv.resp_headers["Content-Type"]}\r
+    # Content-Length: #{conv.resp_headers["Content-Length"]}\r
+    Enum.map(conv.resp_headers, fn {k, v} -> "#{k}: #{v}\r" end)
+    |> Enum.sort()
+    |> Enum.reverse()
+    |> Enum.join("\n")
+  end
+
+  # or using a comprehension:
+
+  # defp format_response_headers(conv) do
+  #   for {key, value} <- conv.resp_headers do
+  #     "#{key}: #{value}\r"
+  #   end |> Enum.sort |> Enum.reverse |> Enum.join("\n")
+  # end
 end
