@@ -26,11 +26,12 @@ defmodule Servy.Handler do
     %{conv | status: 200, resp_body: "Bears, Lions, Tigers"}
   end
 
-  def route(%Conv{method: "GET", path: "/about"} = conv) do
+  def route(%Conv{method: "GET", path: "/pages/" <> name} = conv) do
     @pages_path
-    |> Path.join("about.html")
+    |> Path.join("#{name}.md")
     |> File.read()
     |> handle_file(conv)
+    |> markdown_to_html
   end
 
   def route(%Conv{method: "GET", path: "/bears"} = conv) do
@@ -72,6 +73,12 @@ defmodule Servy.Handler do
   # end
 
   # def emojify(%Conv{} = conv), do: conv
+
+  def markdown_to_html(%Conv{status: 200} = conv) do
+    %{conv | resp_body: Earmark.as_html!(conv.resp_body)}
+  end
+
+  def markdown_to_html(%Conv{} = conv), do: conv
 
   def put_content_length(conv) do
     headers = Map.put(conv.resp_headers, "Content-Length", String.length(conv.resp_body))

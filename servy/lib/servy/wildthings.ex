@@ -16,12 +16,11 @@ defmodule Servy.Wildthings do
     #   %Bear{id: 9, name: "Iceman", type: "Polar", hibernating: true},
     #   %Bear{id: 10, name: "Kenai", type: "Grizzly"}
     # ]
-    json =
-      @db_path
-      |> Path.join("bears.json")
-      |> read_json
-      |> Poison.decode!(as: %{"bears" => [%Bear{}]})
-      |> Map.get("bears")
+    @db_path
+    |> Path.join("bears.json")
+    |> read_json
+    |> Poison.decode!(as: %{"bears" => [%Bear{}]})
+    |> Map.get("bears")
   end
 
   def get_bear(id) when is_integer(id) do

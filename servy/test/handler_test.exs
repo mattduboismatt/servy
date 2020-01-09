@@ -177,9 +177,9 @@ defmodule HandlerTest do
            """
   end
 
-  test "GET /about" do
+  test "GET /pages/about" do
     request = """
-    GET /about HTTP/1.1\r
+    GET /pages/about HTTP/1.1\r
     Host: example.com\r
     User-Agent: ExampleBrowser/1.0\r
     Accept: */*\r
@@ -191,12 +191,12 @@ defmodule HandlerTest do
     expected_response = """
     HTTP/1.1 200 OK\r
     Content-Type: text/html\r
-    Content-Length: 102\r
+    Content-Length: 103\r
     \r
-    <h1>Clark's Wildthings Refuge</h1>
+    <h1>Clark Wildthings Refuge</h1>
 
     <blockquote>
-    When we contemplate the whole globe...
+    <p>When we contemplate the whole globe!</p>
     </blockquote>
     """
 
