@@ -15,11 +15,23 @@ defmodule Servy.Handler do
     request
     |> parse
     |> rewrite_path
-    |> log
+    # |> log
     |> route
     |> track
     |> put_content_length
     |> format_response
+  end
+
+  # curl http://localhost:4000/hibernate/10000
+  def route(%Conv{method: "GET", path: "/kaboom"}) do
+    raise "Kaboom!"
+  end
+
+  # curl http://localhost:4000/hibernate/10000
+  def route(%Conv{method: "GET", path: "/hibernate/" <> time} = conv) do
+    time |> String.to_integer |> :timer.sleep
+
+    %{conv | status: 200, resp_body: "Awake!"}
   end
 
   def route(%Conv{method: "GET", path: "/wildthings"} = conv) do
@@ -38,6 +50,7 @@ defmodule Servy.Handler do
     BearController.index(conv)
   end
 
+  # curl http://localhost:4000/api/bears
   def route(%Conv{method: "GET", path: "/api/bears"} = conv) do
     Servy.Api.BearController.index(conv)
   end
