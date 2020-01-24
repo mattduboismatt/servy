@@ -3,6 +3,7 @@ defmodule Servy.Handler do
 
   alias Servy.Conv
   alias Servy.BearController
+  alias Servy.VideoCam
 
   @pages_path Path.expand("pages", File.cwd!())
 
@@ -36,6 +37,33 @@ defmodule Servy.Handler do
 
   def route(%Conv{method: "GET", path: "/wildthings"} = conv) do
     %{conv | status: 200, resp_body: "Bears, Lions, Tigers"}
+  end
+
+  def route(%Conv{ method: "GET", path: "/snapshots" } = conv) do
+    # synchronously, takes 3 seconds
+    # snapshot1 = VideoCam.get_snapshot("cam-1")
+    # snapshot2 = VideoCam.get_snapshot("cam-2")
+    # snapshot3 = VideoCam.get_snapshot("cam-3")
+
+    # Can't just call snapshot = spawn... because it returns the pid
+    # pid1 = spawn(fn -> VideoCam.get_snapshot("cam-1") end)
+
+    # need to use the Actor Model of Concurrency
+    # make sure to spawn ALL the processes first as receive is a blocking call
+    parent = self() # the request-handling process aka the CALLER
+    spawn(fn -> send(parent, {:result, VideoCam.get_snapshot("cam-1")}) end)
+    spawn(fn -> send(parent, {:result, VideoCam.get_snapshot("cam-2")}) end)
+    spawn(fn -> send(parent, {:result, VideoCam.get_snapshot("cam-3")}) end)
+
+    # ready to receive on the parent process
+    # match messages against the tuple and return the filename
+    snapshot1 = receive do {:result, filename} -> filename end
+    snapshot2 = receive do {:result, filename} -> filename end
+    snapshot3 = receive do {:result, filename} -> filename end
+
+    snapshots = [snapshot1, snapshot2, snapshot3]
+
+    %{ conv | status: 200, resp_body: inspect snapshots }
   end
 
   def route(%Conv{method: "GET", path: "/pages/" <> name} = conv) do
