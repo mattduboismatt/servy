@@ -5,6 +5,8 @@ defmodule HttpServerTest do
   alias Servy.HttpClient
 
   test "accepts a request on a socket and sends back a response" do
+    # this is how you start the server
+    # args are name of module, function, and list of arguments
     spawn(HttpServer, :start, [4000])
 
     request = """

@@ -68,7 +68,14 @@ defmodule Servy.HttpServer do
     IO.puts "⚡️  Connection accepted!\n"
 
     # Receives the request and sends a response over the client socket.
-    spawn(fn -> serve(client_socket) end)
+    # spawn(fn -> serve(client_socket) end)
+
+    # Need to keep track of the controlling process so that we can close
+    # all spawned processes when the controller process dies.
+    # This makes the client_socket the controlling process for our spawned process.
+    # Now if the spawned process dies, the client_socket will be automatically closed.
+    pid = spawn(fn -> serve(client_socket) end)
+    :ok = :gen_tcp.controlling_process(client_socket, pid)
 
     # Loop back to wait and accept the next connection.
     accept_loop(listen_socket)
